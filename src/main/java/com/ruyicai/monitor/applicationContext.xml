@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+
+<beans>  
+   <!-- 1配置connectionFactory --> 
+    <bean id="jmsConnectionFactory"  
+           class="org.apache.activemq.ActiveMQConnectionFactory">   
+       <property name="brokerURL" value="failover://(tcp://localhost:61616,tcp://192.168.0.94:61616)?randomize=false" />   
+       <property name="useAsyncSend" value="true"/>   
+   </bean>  
+      
+    <bean id="jmsFactory" class="org.apache.activemq.pool.PooledConnectionFactory"  
+        destroy-method="stop">  
+        <property name="maxConnections" value="8" />
+		<property name="maximumActive" value="500" />
+		<property name="connectionFactory" ref="jmsConnectionFactory" /> 
+    </bean>   
+   <!-- 2发送消息的目的地（ ActiveMQ destinations ） -->  
+   <!--  使用topic方式-->   
+    <bean id="destination1" class="org.apache.activemq.command.ActiveMQTopic">   
+        <!-- 设置消息队列的名字 -->   
+        <constructor-arg index="0" value="orderbetTopic" />   
+    </bean>
+    
+     <bean id="destination2" class="org.apache.activemq.command.ActiveMQTopic">   
+        <!-- 设置消息队列的名字 -->   
+        <constructor-arg index="0" value="orderAfterBetTopic" />   
+    </bean>
+     <bean id="destination3" class="org.apache.activemq.command.ActiveMQTopic">   
+        <!-- 设置消息队列的名字 -->   
+        <constructor-arg index="0" value="ordercannelTopic" />   
+    </bean>
+   <!--  使用Queue方式-->  
+    <!--  <bean id="destination3" class="org.apache.activemq.command.ActiveMQQueue">
+      <constructor-arg index="0">
+     <value>orderbetTopic</value>
+      </constructor-arg>
+     </bean>-->  
+
+    <!-- 3Spring JMS Template -->   
+    <bean id="jmsTemplate" class="org.springframework.jms.core.JmsTemplate">   
+       <property name="connectionFactory">   
+            <ref local="jmsFactory" />   
+       </property>   
+        <property name="messageConverter" ref="defaultMessageConverter" /> 
+        <!-- 区别它采用的模式为false是p2p为true是订阅 -->   
+        <property name="pubSubDomain" value="true" />   
+   </bean> 
+  
+   <!-- 4 MessageConverter org.springframework.jms.support.converter.MessageConverter接口, 提供消息的转换功能     -->   
+      <bean id="defaultMessageConverter" class="com.ruyicai.monitor.jms.InnerMessageConverter"></bean>   
+
+   
+<!--  5MessageProducer  实例拥有n个消息生产者   --> 
+ <!-- POJO which send Message uses  Spring JmsTemplate -->  
+   <!-- <bean id="topicMessageProducer" class="com.ruyicai.monitor.jms.TopicMessageProducer">  
+        <property name="template" ref="jmsTemplate" />  
+        <property name="destination" ref="destination1" />  
+    </bean>  -->  
+   <!--  <bean id="queueMessageProducer" class="com.ruyicai.monitor.jms.QueuMessageProducer">  
+        <property name="template" ref="jmsTemplate" />  
+        <property name="destination" ref="destination3" />  
+    </bean>    -->  
+
+<!--  6MessageConsumer  实例拥有n个消息消费者   -->  
+    <!--  Message Driven POJO (MDP) -->  
+    <!-- consumer1 for topic a -->  
+    <bean id="topicConsumerA" class="com.ruyicai.monitor.jms.TopicConsumerA" />  
+    <!-- consumer2 for topic a -->  
+    <bean id="topicConsumerB" class="com.ruyicai.monitor.jms.TopicConsumerB" />  
+     <!-- consumer3 for topic a -->  
+    <bean id="topicConsumerC" class="com.ruyicai.monitor.jms.TopicConsumerC" /> 
+   <!-- consumer for queue -->  
+      <!-- <bean id="queueConsumer" class="com.andyao.activemq.QueueConsumer" />  -->  
+
+<!--  7每一个消息消费者都对应一个MessageListener   -->
+     <bean id="topicListenerA" class="org.springframework.jms.listener.adapter.MessageListenerAdapter">  
+        <constructor-arg ref="topicConsumerA" />  
+        <!--  may be other method -->  
+        <property name="defaultListenerMethod" value="receive" />  
+        <!-- custom MessageConverter define -->  
+        <property name="messageConverter" ref="defaultMessageConverter" />  
+    </bean>  
+  
+    <bean id="topicListenerB" class="org.springframework.jms.listener.adapter.MessageListenerAdapter">  
+        <constructor-arg ref="topicConsumerB" />  
+       <!--  may be other method -->  
+        <property name="defaultListenerMethod" value="receive" />  
+        <!-- custom MessageConverter define -->  
+        <property name="messageConverter" ref="defaultMessageConverter" />  
+    </bean>  
+   <bean id="topicListenerC" class="org.springframework.jms.listener.adapter.MessageListenerAdapter">  
+        <constructor-arg ref="topicConsumerC" />  
+       <!--  may be other method -->  
+        <property name="defaultListenerMethod" value="receive" />  
+        <!-- custom MessageConverter define -->  
+        <property name="messageConverter" ref="defaultMessageConverter" />  
+    </bean>
+      <!-- <bean id="queueListener" class="org.springframework.jms.listener.adapter.MessageListenerAdapter">  
+        <constructor-arg ref="queueConsumer" />  --> 
+        <!--  may be other method -->  
+       <!--<property name="defaultListenerMethod" value="receive" />-->   
+        <!-- custom MessageConverter define -->  
+       <!--  <property name="messageConverter" ref="defaultMessageConverter" />  
+    </bean>  --> 
+
+<!--  8消息监听有几个MessageListener既有几个MessageListenerContainer   -->
+ 
+<bean id="topicListenerContainerA" class="org.springframework.jms.listener.DefaultMessageListenerContainer">  
+        <property name="connectionFactory" ref="jmsFactory" />  
+        <property name="destination" ref="destination1" />  
+       <property name="messageListener" ref="topicListenerA" />  
+       <property name="concurrentConsumers" value="5"></property> 
+       <!--0:CACHE_NONE,1:CACHE_CONNECTION,2:CACHE_SESSION,3:CACHE_CONSUMER,4:CACHE_AUTO-->   
+       <property name="cacheLevel" value="0"/>     
+    </bean>  
+  
+    <bean id="topicListenerContainerB" class="org.springframework.jms.listener.DefaultMessageListenerContainer">  
+        <property name="connectionFactory" ref="jmsFactory" />  
+        <property name="destination" ref="destination2" />  
+        <property name="messageListener" ref="topicListenerB" />  
+        <property name="concurrentConsumers" value="5"></property>   
+        <!--0:CACHE_NONE,1:CACHE_CONNECTION,2:CACHE_SESSION,3:CACHE_CONSUMER,4:CACHE_AUTO-->   
+       <property name="cacheLevel" value="0"/>   
+        <property name="pubSubNoLocal" value="false"></property> 
+    </bean>  
+        <bean id="topicListenerContainerC" class="org.springframework.jms.listener.DefaultMessageListenerContainer">  
+        <property name="connectionFactory" ref="jmsFactory" />  
+        <property name="destination" ref="destination3" />  
+        <property name="messageListener" ref="topicListenerC" />  
+        <property name="concurrentConsumers" value="5"></property>   
+        <!--0:CACHE_NONE,1:CACHE_CONNECTION,2:CACHE_SESSION,3:CACHE_CONSUMER,4:CACHE_AUTO-->   
+       <property name="cacheLevel" value="0"/>   
+        <property name="pubSubNoLocal" value="false"></property> 
+    </bean>  
+       
+ <!--    <bean id="queueListenerContainer" class="org.springframework.jms.listener.DefaultMessageListenerContainer">  
+        <property name="connectionFactory" ref="jmsFactory" />  
+        <property name="destination" ref="destination3" />  
+        <property name="messageListener" ref="queueListener" />  
+       <property name="cacheLevel" value="0"/>   
+    </bean>  
+  -->   
+</beans>
+

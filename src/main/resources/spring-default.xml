@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.0.xsd
+	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
+	http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.0.xsd
+	http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.0.xsd
+	http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.0.xsd
+	http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd">
+ 	
+
+	<context:property-placeholder location="classpath:hibernate.properties" /> 
+
+	<!-- 自动搜索@Controller标注的类 -->
+	<context:component-scan base-package="com.ruyicai.**,**" >
+	</context:component-scan>
+        
+
+
+	<bean class="org.springframework.web.servlet.mvc.annotation.DefaultAnnotationHandlerMapping" />
+
+	<bean  class="org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter" >  
+		<property name="messageConverters">  
+			<list>  
+				
+				<bean class = "org.springframework.http.converter.StringHttpMessageConverter">  
+					<property name = "supportedMediaTypes">  
+						<list>  
+							<value>text/plain;charset=UTF-8</value>  
+						</list>  
+					</property>  
+				</bean>  
+				<bean class="org.springframework.http.converter.ResourceHttpMessageConverter"/>  
+					<ref bean="mappingJacksonHttpMessageConverter" />  
+<!-- 			<ref bean="marshallingHttpMessageConverter"/> -->
+					
+			</list>  
+		</property>  
+	</bean>  
+	<bean id="mappingJacksonHttpMessageConverter" class="org.springframework.http.converter.json.MappingJacksonHttpMessageConverter" /> 
+	
+<!-- 	<bean id="marshallingHttpMessageConverter"  -->
+<!--       class="org.springframework.http.converter.xml.MarshallingHttpMessageConverter"> -->
+<!--      <property name="marshaller" ref="castorMarshaller" /> -->
+<!--    	 <property name="unmarshaller" ref="castorMarshaller" /> -->
+<!--    	</bean> -->
+   	
+<!--     <bean id="castorMarshaller" class="org.springframework.oxm.castor.CastorMarshaller"/> -->
+    
+	<bean id="viewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver"
+		p:viewClass="org.springframework.web.servlet.view.JstlView"
+		p:prefix="/pages/"
+		p:suffix=".jsp" />
+		 
+	<mvc:resources mapping="/dwz/**" location="/dwz/" />  
+	<mvc:resources mapping="/styles/**" location="/styles/" />   
+	<mvc:resources mapping="/flash/**" location="/flash/" />
+	<mvc:resources mapping="/pages/**" location="/pages/" />  
+	<mvc:resources mapping="/images/**" location="/images/" />  
+	<mvc:resources mapping="/includes/**" location="/includes/" />  
+
+    <tx:annotation-driven  />		
+	<context:annotation-config />  
+        
+	<aop:aspectj-autoproxy proxy-target-class="true" />
+    
+
+   <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+	<property name="maxUploadSize">
+		<value>200455340</value>
+	</property>
+	<property name="defaultEncoding">
+		<value>utf-8</value>
+	</property>
+   </bean>
+
+</beans>

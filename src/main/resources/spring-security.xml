@@ -1,0 +1,146 @@
+<?xml
+ version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/security"
+  xmlns:beans="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+           http://www.springframework.org/schema/security
+           http://www.springframework.org/schema/security/spring-security-3.1.xsd">
+
+
+    <global-method-security secured-annotations="enabled"></global-method-security>
+    	<http pattern="/pages/index.jsp" security="none"/>
+		<http pattern="/dwz/**" security="none"/>
+		<http pattern="/includes/**" security="none"/>
+		<http pattern="/images/**" security="none"/>
+		<http pattern="/styles/**" security="none"/>
+		<http pattern="/pages/common/**" security="none"/>
+		<http pattern="/uploadfile/*" security="none" />
+		<!---->
+	<http   auto-config="false"	 once-per-request="true" 
+			access-decision-manager-ref="accessDecisionManager" 
+			access-denied-page="/pages/common/accessDenied.jsp" 
+			entry-point-ref="authenticationProcessingFilterEntryPoint"
+			>	
+			<anonymous enabled="false"/>	
+     <intercept-url pattern="/**" access="ROLE_USER,ROLE_ADMIN" />
+		  <custom-filter ref="validateCodeAuthenticationFilter"
+			position="FORM_LOGIN_FILTER" />
+		<logout logout-url="/logout" success-handler-ref="logoutSuccessHandler"/>
+	<!-- 	<custom-filter before="LOGOUT_FILTER" ref="requestSingleLogoutFilter"/>                              
+		<custom-filter before="CAS_FILTER" ref="singleLogoutFilter"/> -->
+		 <!-- "记住我"功能，采用持久化策略（将用户的登录信息存放在数据库表中） 
+             <remember-me data-source-ref="dataSource" />--> 
+  <!-- 检测失效的sessionId,超时时定位到另外一个URL -->
+      <session-management invalid-session-url="/pages/common/sessionTimeout.jsp" />
+  <!--<custom-filter ref="ipFilter" before="FILTER_SECURITY_INTERCEPTOR"/>-->
+	</http>
+	<!--ipFilter start 
+	<beans:bean id="ipFilter" class="com.ruyicai.security.IPRoleAuthenticationFilter">     
+	  <beans:property name="allowedIPAddresses">    
+	    <beans:list>    
+	      <beans:value>192.168.*.*</beans:value>
+	      <beans:value>202.43.152.*</beans:value> 
+	      <beans:value>*</beans:value>
+	    </beans:list>    
+	  </beans:property>
+	</beans:bean>-->
+    <!--ipFilter end -->
+    
+     <!--login validate code filter start -->
+	<beans:bean id="validateCodeAuthenticationFilter"
+		class="com.ruyicai.security.ValidateCodeUsernamePasswordAuthenticationFilter">
+		<beans:property name="filterProcessesUrl" value="/j_spring_security_check"></beans:property>
+		<beans:property name="authenticationSuccessHandler"
+			ref="successHandler"></beans:property>
+		<beans:property name="authenticationFailureHandler"
+			ref="failureHandler"></beans:property>
+		<beans:property name="authenticationManager" ref="authenticationManager"></beans:property>
+	</beans:bean>
+<beans:bean id="exceptionTranslationFilter"
+  class="org.springframework.security.web.access.ExceptionTranslationFilter">
+ <beans:property name="authenticationEntryPoint" ref="authenticationProcessingFilterEntryPoint"/>
+ <beans:property name="accessDeniedHandler" ref="accessDeniedHandler"/>
+</beans:bean>
+<beans:bean id="accessDeniedHandler"
+     class="org.springframework.security.web.access.AccessDeniedHandlerImpl">
+  <beans:property name="errorPage" value="/pages/common/accessDenied.jsp"/>
+</beans:bean>
+
+
+	 <!--login validate code filter end -->
+  	<!-- 自定义的认证成功@Service跳转目标 -->
+	<beans:bean id="successHandler" class="com.ruyicai.security.AuthenticationSuccessHandler">
+		<beans:property name="defaultTargetUrl" value="/"></beans:property>
+		<beans:property name="alwaysUseDefaultTargetUrl" value="true"></beans:property>
+	</beans:bean>
+	<!-- 自定义的认证失败跳转目标 -->
+	<beans:bean id="failureHandler" class="com.ruyicai.security.MyAuthenticationFailureHandler">
+		<beans:property name="defaultFailureUrl" value="/pages/common/login.jsp?error=true"></beans:property>
+	</beans:bean>
+	<!-- 自定义的认证入口 -->
+	<!-- <beans:bean id="entryPoint" class="org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint">
+		<beans:property name="loginFormUrl" value="/pages/common/login.jsp"></beans:property>
+	</beans:bean>-->
+		<beans:bean id="authenticationProcessingFilterEntryPoint"   
+    class="org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint">   
+     <beans:property name="loginFormUrl" value="/pages/common/login.jsp"></beans:property>
+    </beans:bean>  
+<!--	<beans:bean id="casEntryPoint" class="org.springframework.security.cas.web.CasAuthenticationEntryPoint">
+	 	<beans:property name="loginUrl" value="${loginCASUrl}/login"/>
+		<beans:property name="serviceProperties" ref="serviceProperties"/>
+	</beans:bean>
+	<beans:bean id="serviceProperties" class="org.springframework.security.cas.ServiceProperties">
+	    <beans:property name="service"  value="${this.Url}/j_spring_cas_security_check"/>
+		<beans:property name="sendRenew" value="false"/>
+	</beans:bean>-->
+	<!-- 退出成功 -->
+	<beans:bean id="logoutSuccessHandler" class="com.ruyicai.security.SystemLogoutSuccessHandler"></beans:bean>
+	<!-- 注销客户端 -->
+	<!--<beans:bean id="singleLogoutFilter" class="org.jasig.cas.client.session.SingleSignOutFilter" />-->
+	<!-- 注销服务器 -->
+	<!--<beans:bean id="requestSingleLogoutFilter" class="org.springframework.security.web.authentication.logout.LogoutFilter" >
+		<beans:constructor-arg value="${loginCASUrl}/logout?service=${this.Url}" />  
+		<beans:constructor-arg>
+			<beans:bean class="org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler" />
+		</beans:constructor-arg>
+		<beans:property name="filterProcessesUrl" value="/j_spring_security_logout" />
+    </beans:bean>-->
+	<!-- 自定义用户详情 -->
+<!-- 	<beans:bean id="userDetailService" class="com.ruyicai.security.SystemUserDetailService"></beans:bean> -->
+<!--1.验证配置   认证管理器 实现 用户认证的入口 主要实现UserDetailsService接口-->
+	<authentication-manager  alias="authenticationManager">
+			    <authentication-provider user-service-ref="userService">
+			<password-encoder hash="md5"/>
+	       
+	    </authentication-provider>
+	</authentication-manager>
+	<!--2.访问决策器 实现 决定某个用户具有的角色 是否有权限访问某个资源-->
+	<!-- AffirmativeBased表示只要有一个Voter通过权限要求，就可以访问 -->   
+	<!-- ConsensusBased表示非弃权的所有人通过，才可以访问 -->    
+	<!-- UnanimousBased表示只有所有人通过，才可以访问 --> 
+	<beans:bean id="accessDecisionManager" class="org.springframework.security.access.vote.AffirmativeBased">
+	<!-- allowIfAllAbstainDecisions是否允许所的投票者弃权,如果为false，表示如果所有的投票者弃权，就禁止访问 --> 
+       <beans:property name="allowIfAllAbstainDecisions"  
+            value="false" /> 
+	  	<beans:property name="decisionVoters">
+	
+			<beans:list>
+			<!-- RoleVoter默认角色名称都要以ROLE_开头，否则不会被计入权限控制，如果要修改前缀，可以通过对rolePrefix属性进行修改 -->  
+		<!-- <beans:bean class="org.springframework.security.access.vote.RoleVoter" /> -->
+				
+			
+			<!--	<beans:bean class="org.springframework.security.access.vote.AuthenticatedVoter" />-->
+			
+				<beans:bean class="com.ruyicai.security.DynamicRoleVoter" />
+			
+			</beans:list>
+		
+		</beans:property>
+	
+	</beans:bean>
+	
+	<!--3.资源源数据定义  建立资源权限对应关系 每个资源有哪些角色可以访问-->
+	
+</beans:beans>
